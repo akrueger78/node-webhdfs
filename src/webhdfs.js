@@ -559,12 +559,14 @@ WebHDFSClient.prototype.create = function (path, data, hdfsoptions, requestoptio
             
             // generate query string
             args = _.defaults({
-                body: data,
                 uri: response.headers.location
             }, requestoptions || {});
+
+            // set data to request args
+            if (data) args.body = data;
             
             // send http request
-            request.put(args, function (error, response, body) {
+            var s = request.put(args, function (error, response, body) {
                 
                 // forward request error
                 if (error) return callback(error);
@@ -573,7 +575,12 @@ WebHDFSClient.prototype.create = function (path, data, hdfsoptions, requestoptio
                 if (response.statusCode == 201) {
                     
                     // execute callback
-                    return callback(null, response.headers.location);
+                    if (data) {
+                        return callback(null, response.headers.location);
+                    } else {
+                        // return writeStream if no data was given
+                        return callback(null, s, response.headers.location);
+                    }
                     
                 } else {
                     
