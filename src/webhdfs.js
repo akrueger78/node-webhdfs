@@ -562,8 +562,15 @@ WebHDFSClient.prototype.create = function (path, data, hdfsoptions, requestoptio
                 uri: response.headers.location
             }, requestoptions || {});
 
-            // set data to request args
-            if (data) args.body = data;
+            var stream;
+            if (data && typeof(data)=="object" && data.pipe) {
+              // data is a stream
+              stream=data;
+              data=null;
+            } else {
+              // set data to request args
+              args.body = data;
+            }
             
             // send http request
             var s = request.put(args, function (error, response, body) {
@@ -575,12 +582,7 @@ WebHDFSClient.prototype.create = function (path, data, hdfsoptions, requestoptio
                 if (response.statusCode == 201) {
                     
                     // execute callback
-                    if (data) {
-                        return callback(null, response.headers.location);
-                    } else {
-                        // return writeStream if no data was given
-                        return callback(null, s, response.headers.location);
-                    }
+                    return callback(null, response.headers.location);
                     
                 } else {
                     
@@ -589,6 +591,9 @@ WebHDFSClient.prototype.create = function (path, data, hdfsoptions, requestoptio
                 }
                 
             });
+
+            // pipe data stream
+            if (stream) stream.pipe(s);
             
         } else {
             
